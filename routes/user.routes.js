@@ -1,7 +1,21 @@
 const express = require("express");
 const User = require("../models/users.model");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
+
+function generateAccessToken(role) {
+  const accessToken = jwt.sign(
+    {
+      role: role,
+    },
+    process.env.SECRET_KEY,
+    {
+      expiresIn: "15min",
+    }
+  );
+  return accessToken;
+}
 
 //Register (POST)
 router.post("/register", async (req, res) => {
@@ -33,7 +47,8 @@ router.post("/login", async (req, res) => {
     if (!match) {
       return res.status(401).json({ message: "Bad Credentials" });
     }
-    res.json({ message: "user loggedIN" });
+    const accessToken = generateAccessToken(user.role);
+    res.json({ message: "user loggedIN", token: accessToken });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
