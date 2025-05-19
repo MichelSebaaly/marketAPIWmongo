@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.token.split(" ")[1];
+  const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
     return res.status(403).json({ message: "UnAuthorized!!" });
   }
@@ -9,7 +10,8 @@ const authenticate = (req, res, next) => {
     if (err) {
       return res.status(401).json({ message: "Token is not valid!!" });
     }
-    req.role = decoded;
+    decoded._id = mongoose.Types.ObjectId.createFromHexString(decoded._id);
+    req.user = decoded;
     next();
   });
 };

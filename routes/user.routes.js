@@ -2,12 +2,15 @@ const express = require("express");
 const User = require("../models/users.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const authenticate = require("../utils/authenticate");
+const mongoose = require("mongoose");
 const router = express.Router();
 
-function generateAccessToken(role) {
+function generateAccessToken(user) {
   const accessToken = jwt.sign(
     {
-      role: role,
+      _id: user._id,
+      role: user.role,
     },
     process.env.SECRET_KEY,
     {
@@ -35,9 +38,9 @@ router.post("/register", async (req, res) => {
 //Login (POST)
 router.post("/login", async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { email, password } = req.body;
     const user = await User.findOne(
-      { name },
+      { email },
       { name: 1, password: 1, role: 1 }
     );
     if (!user) {
@@ -47,11 +50,30 @@ router.post("/login", async (req, res) => {
     if (!match) {
       return res.status(401).json({ message: "Bad Credentials" });
     }
-    const accessToken = generateAccessToken(user.role);
-    res.json({ message: "user loggedIN", token: accessToken });
+    const accessToken = generateAccessToken({ role: user.role, _id: user._id });
+    res.send({ name: user.name, role: user.role, accessToken });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+//Remove User (DELETE)
+router.delete("/:id", authenticate, async (req, res) => {
+  const { role } = req.user;
+  if (role !== "admin") {
+    return res.status(401).json({ message: "UnAuthorized" });
+  }
+  try {
+    const result = await User.deleteOne({ _id: req.params.id });
+    res.send(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+//Logout (POST)
+router.post("/logout", authenticate, (req, res) => {
+  res.json({ message: "User logged out" });
 });
 
 module.exports = router;

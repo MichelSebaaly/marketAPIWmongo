@@ -5,11 +5,10 @@ const orderSchema = new mongoose.Schema({
   total_price: { type: Number, required: true, min: 1 },
   status: {
     type: String,
-    enum: ["Order Placed", "Processing", "On Its Way", "Delivered"],
     default: "Order Placed",
-    required: true,
+    enum: ["Order Placed", "Processing", "On Its Way", "Delivered"],
   },
-  address: { type: String, required: true },
+  address: { type: String },
   createdAt: { type: Date, default: Date.now() },
 });
 
