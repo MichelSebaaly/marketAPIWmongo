@@ -78,7 +78,6 @@ router.patch("/", authenticate, async (req, res) => {
     return res.status(401).json({ message: "UnAuthorized" });
   }
   const { orderStatus, orderId } = req.body;
-  console.log(orderId);
   try {
     const response = await Order.updateOne(
       { _id: orderId },

@@ -71,6 +71,20 @@ router.delete("/:id", authenticate, async (req, res) => {
   }
 });
 
+//Get users
+router.get("/", authenticate, async (req, res) => {
+  const { role } = req.user;
+  if (role !== "admin") {
+    return res.status(401).json({ message: "UnAuthorized" });
+  }
+  try {
+    const users = await User.find();
+    res.send(users);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 //Logout (POST)
 router.post("/logout", authenticate, (req, res) => {
   res.json({ message: "User logged out" });
