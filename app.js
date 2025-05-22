@@ -9,6 +9,8 @@ const orderRoutes = require("./routes/order.routes");
 const orderItemRoutes = require("./routes/orderItem.routes");
 
 const app = express();
+
+app.use("/uploads", express.static("uploads"));
 const PORT = process.env.PORT || 3000;
 
 app.use(
