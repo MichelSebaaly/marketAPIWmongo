@@ -5,8 +5,11 @@ const jwt = require("jsonwebtoken");
 const authenticate = require("../utils/authenticate");
 const mongoose = require("mongoose");
 const router = express.Router();
+const cookieParser = require("cookie-parser");
 
-function generateAccessToken(user) {
+router.use(cookieParser());
+
+function generateTokens(user) {
   const accessToken = jwt.sign(
     {
       _id: user._id,
@@ -17,7 +20,17 @@ function generateAccessToken(user) {
       expiresIn: "15min",
     }
   );
-  return accessToken;
+
+  const refreshToken = jwt.sign(
+    {
+      _id: user._id,
+      role: user.role,
+    },
+    process.env.REFRESH_SECRET_KEY,
+    { expiresIn: "7d" }
+  );
+
+  return { accessToken, refreshToken };
 }
 
 //Register (POST)
@@ -50,11 +63,37 @@ router.post("/login", async (req, res) => {
     if (!match) {
       return res.status(401).json({ message: "Bad Credentials" });
     }
-    const accessToken = generateAccessToken({ role: user.role, _id: user._id });
+    const { accessToken, refreshToken } = generateTokens({
+      role: user.role,
+      _id: user._id,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      path: "/api/user/refresh",
+    });
     res.send({ name: user.name, role: user.role, accessToken });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+//Refresh token (POST)
+router.post("/refresh", (req, res) => {
+  const token = req.cookies.refreshToken;
+  console.log(token);
+  if (!token) {
+    return res.status(401).json({ message: "No token" });
+  }
+  jwt.verify(token, process.env.REFRESH_SECRET_KEY, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "Invalid token" });
+    }
+    console.log(user);
+    const { accessToken } = generateTokens(user);
+    res.json({ accessToken });
+  });
 });
 
 //Remove User (DELETE)
