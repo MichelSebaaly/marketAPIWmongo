@@ -3,9 +3,9 @@ const User = require("../models/users.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authenticate = require("../utils/authenticate");
-const mongoose = require("mongoose");
 const router = express.Router();
 const cookieParser = require("cookie-parser");
+const upload = require("../utils/multerConfig");
 
 router.use(cookieParser());
 
@@ -54,7 +54,7 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne(
       { email },
-      { name: 1, password: 1, role: 1 }
+      { name: 1, email: 1, phone: 1, imageURL: 1, password: 1, role: 1 }
     );
     if (!user) {
       return res.status(400).json({ message: "User does not exists" });
@@ -73,7 +73,14 @@ router.post("/login", async (req, res) => {
       sameSite: "Strict",
       path: "/api/user/refresh",
     });
-    res.send({ name: user.name, role: user.role, accessToken });
+    res.send({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      imageURL: user.imageURL,
+      role: user.role,
+      accessToken,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -121,6 +128,61 @@ router.get("/", authenticate, async (req, res) => {
     res.send(users);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+//Edit Profile (PUT)
+router.put("/", authenticate, async (req, res) => {
+  try {
+    const updateInfo = { ...req.body };
+    const result = await User.updateOne(
+      { _id: req.user._id },
+      { $set: { ...updateInfo } }
+    );
+    res.json({ message: "Profile updated successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//Change Profile Pic (PUT)
+router.put(
+  "/changeImage",
+  authenticate,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const imageURL = req.file?.filename;
+      console.log(imageURL);
+      const result = await User.updateOne(
+        { _id: req.user._id },
+        { $set: { imageURL } }
+      );
+      res.json({ message: "Image updated successfully", imageURL });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+//Change Password (PATCH)
+router.patch("/", authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const { password } = user;
+    const { oldPassword, newPassword } = req.body;
+    const match = await bcrypt.compare(oldPassword, password);
+    if (!match) {
+      return res.status(400).json({ message: "Enter your correct password" });
+    }
+    const changedPasswordHashed = await bcrypt.hash(newPassword, 10);
+    const result = await User.updateOne(
+      { _id: req.user._id },
+      { $set: { password: changedPasswordHashed } }
+    );
+    res.json({ message: "Password changed successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

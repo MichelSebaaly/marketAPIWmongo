@@ -25,7 +25,7 @@ router.get("/all", authenticate, async (req, res) => {
     return res.status(401).json({ message: "UnAuthorized!" });
   }
   try {
-    const orders = await Order.find();
+    const orders = await Order.find().populate("userId", "name");
     res.send(orders);
   } catch (err) {
     res.status(400).json({ error: err.message });

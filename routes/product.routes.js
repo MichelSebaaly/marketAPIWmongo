@@ -2,20 +2,7 @@ const Product = require("../models/products.model");
 const express = require("express");
 const authenticate = require("../utils/authenticate");
 const router = express.Router();
-const multer = require("multer");
-const fs = require("fs");
-
-const UPLOAD_DIR = "uploads";
-
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR);
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => cb(null, file.originalname),
-});
-const upload = multer({ storage });
+const upload = require("../utils/multerConfig");
 
 //GET ALL Products
 router.get("/", async (req, res) => {
