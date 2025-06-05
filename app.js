@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
+const path = require("path");
 
 const userRoutes = require("./routes/user.routes");
 const categoryRoutes = require("./routes/category.routes");
@@ -10,7 +11,7 @@ const orderItemRoutes = require("./routes/orderItem.routes");
 
 const app = express();
 
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const PORT = process.env.PORT || 3000;
 
 app.use(
